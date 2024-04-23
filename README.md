@@ -1,66 +1,23 @@
-## Foundry
+# Project Overview
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
-
-Foundry consists of:
-
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
-
-## Documentation
-
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
+# Setting out
+Create a new repository using the below command
+```bash
+mkdir foundry-defi-stablecoin-f24
+cd foundry-defi-stablecoin-f24
 ```
 
-### Test
-
-```shell
-$ forge test
+Initialize the repository as a foundry project using the below command
+```bash
+forge init
 ```
 
-### Format
-
-```shell
-$ forge fmt
+Download dependencies from `openzeppelin` using the below command
+```bash
+forge install OpenZeppelin/openzeppelin-contracts --no-commit
 ```
 
-### Gas Snapshots
-
-```shell
-$ forge snapshot
+Add a `remappings` section in the `foundry.toml` in the following manner
 ```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+remappings = ["@openzeppelin=lib/openzeppelin-contracts"]
 ```
