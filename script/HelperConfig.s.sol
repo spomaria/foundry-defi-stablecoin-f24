@@ -66,7 +66,7 @@ contract HelperConfig is Script{
     function getOrCreateAnvilEthConfig() public returns(NetworkConfig memory){
         // returns anvil price feed address
 
-        // we will only set an address if we didn't set it before
+        // an address is only set once
         if(activeNetworkConfig.wethUSDPriceFeed != address(0)){
             return activeNetworkConfig;
         }
