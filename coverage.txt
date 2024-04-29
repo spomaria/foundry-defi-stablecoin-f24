@@ -1,0 +1,13 @@
+Compiling 40 files with 0.8.24
+Solc 0.8.24 finished in 4.70s
+Compiler run [32msuccessful![0m
+Analysing contracts...
+Running tests...
+| File                            | % Lines         | % Statements    | % Branches    | % Funcs        |
+|---------------------------------|-----------------|-----------------|---------------|----------------|
+| script/DeployDSC.s.sol          | 100.00% (11/11) | 100.00% (12/12) | 100.00% (0/0) | 100.00% (1/1)  |
+| script/HelperConfig.s.sol       | 0.00% (0/13)    | 0.00% (0/21)    | 0.00% (0/2)   | 0.00% (0/3)    |
+| src/DSCEngine.sol               | 50.77% (33/65)  | 53.57% (45/84)  | 28.57% (4/14) | 57.89% (11/19) |
+| src/DecentralizedStableCoin.sol | 33.33% (4/12)   | 35.71% (5/14)   | 25.00% (2/8)  | 50.00% (1/2)   |
+| test/mocks/MockV3Aggregator.sol | 6.67% (1/15)    | 6.67% (1/15)    | 100.00% (0/0) | 20.00% (1/5)   |
+| Total                           | 42.24% (49/116) | 43.15% (63/146) | 25.00% (6/24) | 46.67% (14/30) |

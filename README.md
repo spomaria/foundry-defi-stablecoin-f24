@@ -32,3 +32,33 @@ Next, we go to our `foundry.toml` file and use remappings to redirect our import
 remappings = ["@openzeppelin=lib/openzeppelin-contracts",
 "@chainlink/contracts/src/v0.8/shared/interfaces/ = /lib/chainlink-brownie-contracts/contracts/src/v0.8/interfaces/"]
 ```
+
+## Testing
+We can test our Smart Contract using
+```bash
+forge test
+```
+The above command will test all functions in our test script. If on the other hand we have a specific test in mind, we should use the below command
+```bash
+forge test --match-test <name-of-test>
+```
+
+To check the coverage of our test so far, we use the following command
+```bash
+forge coverage
+```
+
+To save the test coverage into a file, we use the following command
+```bash
+forge coverage > coverage.txt
+```
+
+In order to view aspects of the Smart Contract that are not covered in the test script so far, we use the following command
+```bash
+forge coverage --report debug
+```
+
+Alternatively, we can save the test coverage report in a file using the below command
+```bash
+forge coverage --report debug > test-coverage-report.txt
+```
