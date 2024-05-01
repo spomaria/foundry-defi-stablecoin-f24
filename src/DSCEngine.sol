@@ -277,7 +277,7 @@ contract DSCEngine is ReentrancyGuard {
 
     function _redeemCollateral(
         address from, address to, address tokenCollateralAddress, uint256 amountCollateral
-    ) private moreThanZero(amountCollateral) nonReentrant {
+    ) private moreThanZero(amountCollateral) {
         s_CollateralDeposited[from][tokenCollateralAddress] -= amountCollateral;
         emit CollateralRedeemed(from, to, tokenCollateralAddress, amountCollateral);
 

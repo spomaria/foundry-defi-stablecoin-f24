@@ -10,6 +10,10 @@ import { DecentralizedStableCoin } from "../../src/DecentralizedStableCoin.sol";
 import { ERC20Mock } from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 contract DSCEngineTest is Test {
+    /** Events */
+    event CollateralDeposited(address indexed user, address indexed token, uint256 indexed amount);
+    event CollateralRedeemed(address indexed redeemedFrom, address indexed redeemedTo, address indexed token, uint256 amount);
+
     DeployDSC deployer;
     DecentralizedStableCoin dsc;
     DSCEngine engine;
@@ -124,6 +128,21 @@ contract DSCEngineTest is Test {
         assertEq(COLLATERAL_AMOUNT, expectedDepositAmount);
     }
 
+    function testEmitsEventOnDeposit() public {
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
+        vm.expectEmit(true, false, false, false, address(engine));
+        // emit EnteredRaffle(PLAYER);
+        emit CollateralDeposited(USER, weth, COLLATERAL_AMOUNT);
+        // raffle.enterRaffle{value: entranceFee}();
+        
+        engine.depositCollateral(weth, COLLATERAL_AMOUNT);
+        vm.stopPrank();
+    }
+
+    ////////////////////////
+    //// Mint DSC Tests ////
+    ////////////////////////
     function testMintDscRevertsIfValueIsZero() public depositedCollateral {
         vm.expectRevert(
             DSCEngine.DSCEngine__MustBeMoreThanZero.selector
@@ -140,6 +159,16 @@ contract DSCEngineTest is Test {
         vm.stopPrank();
     }
 
+    function testMintDscRevertsIfMintingBreaksHealthFactor() public depositedCollateral {
+        vm.expectRevert();
+        vm.startPrank(USER);
+        engine.mintDsc(UNHEALTHY_DSC);
+        vm.stopPrank();
+    }
+
+    /////////////////////////////////
+    /// Check Health Factor Tests ///
+    /////////////////////////////////
     function testCanCheckHealthFactor() public view {
         uint256 userhealthFactor = engine.getHealthFactor(USER);
         (
@@ -164,18 +193,6 @@ contract DSCEngineTest is Test {
         assert(userHealthFactor > MIN_HEALTH_FACTOR);  
     }
 
-    function testMintDscRevertsIfMintingBreaksHealthFactor() public depositedCollateral {
-        vm.expectRevert();
-        vm.startPrank(USER);
-        engine.mintDsc(UNHEALTHY_DSC);
-        vm.stopPrank();
-
-        // (uint256 totalDscMinted, ) = engine.getAccountInformation(USER);
-        // console.log(totalDscMinted);
-        // console.log(UNHEALTHY_DSC);
-        // assert(totalDscMinted == UNHEALTHY_DSC);
-    }
-
     function testHealthFactorWorksAsExpected() public depositedCollateral {
         uint256 userStartHealthFactor = engine.getHealthFactor(USER);
         vm.startPrank(USER);
@@ -187,6 +204,10 @@ contract DSCEngineTest is Test {
         assert(userEndHealthFactor < userStartHealthFactor);
     }
 
+    /////////////////////////////////////////////
+    //// Deposit Collateral & Mint DSC Tests ////
+    /////////////////////////////////////////////
+    
     modifier depositedCollateralAndMintDsc(){
         vm.startPrank(USER);
         ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
@@ -194,9 +215,43 @@ contract DSCEngineTest is Test {
         vm.stopPrank();
         _;
     }
+
     function testCanDepositCollateralAndMintDsc() public depositedCollateralAndMintDsc {
         (uint256 userBalance, ) = engine.getAccountInformation(USER);
         assertEq(userBalance, HUNDRED_DSC);
+    }
+
+    //////////////////////////////////////////////////
+    //// Deposit Collateral, Mint & Burn DSC Tests ///
+    //////////////////////////////////////////////////
+    
+    modifier depositCollateralMintAndBurnDsc(){
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
+        engine.depositCollateralAndMintDsc(weth, COLLATERAL_AMOUNT, HUNDRED_DSC);
+        dsc.approve(address(engine), FIFTY_DSC);
+        engine.burnDsc(FIFTY_DSC);
+        vm.stopPrank();
+        _;
+    }
+
+    function testCanBurnMintedDsc() public depositCollateralMintAndBurnDsc {
+        (uint256 userBalance, ) = engine.getAccountInformation(USER);
+        assertEq(userBalance, FIFTY_DSC);
+    }
+
+    /////////////////////////////////
+    //// Redeem Collateral Tests ////
+    /////////////////////////////////
+    
+    modifier depositedAndRedeemCollateral(){
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
+        engine.depositCollateral(weth, COLLATERAL_AMOUNT);
+        ERC20Mock(weth).approve(address(engine), HALF_COLLATERAL_AMOUNT);
+        engine.redeemCollateral(weth, HALF_COLLATERAL_AMOUNT);
+        vm.stopPrank();
+        _;
     }
 
     function testRedeemCollateralRevertsIfValueIsZero() public depositedCollateral {
@@ -209,20 +264,68 @@ contract DSCEngineTest is Test {
         
     }
 
-    // function testRedeemCollateralRevertsIfValueIsZero() public depositedCollateral {
-    //     vm.startPrank(USER);
-    //     engine.redeemCollateral(weth, HALF_COLLATERAL_AMOUNT);
-    //     vm.stopPrank();
-    //     uint256 userBalance = engine.getCollateralAmountDeposited(weth, USER);
-    //     assertEq(userBalance, HALF_COLLATERAL_AMOUNT);
-    // }
+    function testCanRedeemCollateralIfValueIsNotZero() public depositedAndRedeemCollateral {
+        uint256 endingCollateralAmount = engine.getCollateralAmountDeposited(weth, USER);
 
-    // function testCanRedeemCollateralForDsc() public depositedCollateral {
-    //     vm.startPrank(USER);
-    //     engine.mintDsc(HUNDRED_DSC);
-    //     ERC20Mock(weth).approve(address(engine), HALF_COLLATERAL_AMOUNT);
-    //     engine.redeemCollateralForDsc(weth, HALF_COLLATERAL_AMOUNT, FIFTY_DSC);
-    //     vm.stopPrank();
+        assertEq(endingCollateralAmount, HALF_COLLATERAL_AMOUNT);
+    }
+
+    function testEmitsEventOnRedeemCollateral() public {
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
+        engine.depositCollateral(weth, COLLATERAL_AMOUNT);
+        ERC20Mock(weth).approve(address(engine), HALF_COLLATERAL_AMOUNT);
         
-    // }
+        vm.expectEmit(true, false, false, false, address(engine));
+        // emit EnteredRaffle(PLAYER);
+        emit CollateralRedeemed(USER, USER, weth, HALF_COLLATERAL_AMOUNT);
+        // raffle.enterRaffle{value: entranceFee}();
+        
+        engine.redeemCollateral(weth, HALF_COLLATERAL_AMOUNT);
+        vm.stopPrank();
+    }
+    /////////////////////////////////////
+    //// redeemCollateralForDSC Tests ///
+    /////////////////////////////////////
+    
+    modifier burnDscAndRedeemCollateral(){
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(engine), COLLATERAL_AMOUNT);
+        engine.depositCollateralAndMintDsc(weth, COLLATERAL_AMOUNT, HUNDRED_DSC);
+        ERC20Mock(weth).approve(address(engine), HALF_COLLATERAL_AMOUNT);
+        dsc.approve(address(engine), FIFTY_DSC);
+        engine.redeemCollateralForDsc(weth, HALF_COLLATERAL_AMOUNT, FIFTY_DSC);
+        vm.stopPrank();
+        _;
+    }
+
+    function testCanRedeemCollateralForDsc() public burnDscAndRedeemCollateral {
+        (uint256 userDscBalance,) = engine.getAccountInformation(USER);
+        uint256 userCollateralBalance = engine.getCollateralAmountDeposited(weth, USER);
+        assertEq(userDscBalance, FIFTY_DSC);
+        assertEq(userCollateralBalance, HALF_COLLATERAL_AMOUNT);
+    }
+
+    ////////////////////////
+    //// liquidate Tests ///
+    ////////////////////////
+    address RAN_USER = makeAddr("random_user");
+    function testLiquidateRevertsIfDebtToCoverIsZero() public depositedCollateralAndMintDsc {
+        vm.expectRevert(
+            DSCEngine.DSCEngine__MustBeMoreThanZero.selector
+        );
+        vm.startPrank(RAN_USER);
+        engine.liquidate(weth, USER, ZERO_DSC);
+        vm.stopPrank();
+    }
+
+    function testLiquidateRevertsIfHealthFactorIsOk() public depositedCollateralAndMintDsc {
+        vm.expectRevert(
+            DSCEngine.DSCEngine__HealthFactorOk.selector
+        );
+        vm.startPrank(RAN_USER);
+        engine.liquidate(weth, USER, FIFTY_DSC);
+        vm.stopPrank();
+    }
+    
 }
