@@ -71,7 +71,7 @@ contract DSCEngine is ReentrancyGuard {
     uint256 private constant ZERO_DSC = 0;
 
     mapping(address token => address priceFeed) private s_priceFeeds;
-    mapping(address user => mapping(address tokenAddress => uint256 amount)) private s_CollateralDeposited;
+    mapping(address user => mapping(address tokenAddress => uint256 amount)) private s_collateralDeposited;
     mapping(address user => uint256 amountDSCMinted) private s_DSCMinted;
     DecentralizedStableCoin immutable private i_dsc; 
     IERC20 private ierc20;
@@ -153,7 +153,7 @@ contract DSCEngine is ReentrancyGuard {
         address tokenCollateralAddress,
         uint256 amountCollateral
     ) public moreThanZero(amountCollateral) tokenIsAllowed(tokenCollateralAddress) nonReentrant{
-        s_CollateralDeposited[msg.sender][tokenCollateralAddress] += amountCollateral;
+        s_collateralDeposited[msg.sender][tokenCollateralAddress] += amountCollateral;
         emit CollateralDeposited(msg.sender, tokenCollateralAddress, amountCollateral);
 
         bool success = IERC20(tokenCollateralAddress).transferFrom(msg.sender, address(this), amountCollateral);
@@ -278,7 +278,7 @@ contract DSCEngine is ReentrancyGuard {
     function _redeemCollateral(
         address from, address to, address tokenCollateralAddress, uint256 amountCollateral
     ) private moreThanZero(amountCollateral) {
-        s_CollateralDeposited[from][tokenCollateralAddress] -= amountCollateral;
+        s_collateralDeposited[from][tokenCollateralAddress] -= amountCollateral;
         emit CollateralRedeemed(from, to, tokenCollateralAddress, amountCollateral);
 
         bool success = IERC20(tokenCollateralAddress).transferFrom(from, to, amountCollateral);
@@ -332,7 +332,7 @@ contract DSCEngine is ReentrancyGuard {
     ) {
         for(uint256 i; i < s_collateralTokens.length;){
             address token = s_collateralTokens[i];
-            uint256 amount = s_CollateralDeposited[user][token];
+            uint256 amount = s_collateralDeposited[user][token];
             totalCollateralValueInUsd += getUsdValue(token, amount);
             unchecked {
                 i++;
@@ -367,6 +367,22 @@ contract DSCEngine is ReentrancyGuard {
     }
 
     function getCollateralAmountDeposited(address token, address user) external view returns(uint256 amountDeposited) {
-        amountDeposited = s_CollateralDeposited[user][token];
+        amountDeposited = s_collateralDeposited[user][token];
+    }
+
+    function getCollateralTokens() external view returns(address[] memory collateralTokens){
+        collateralTokens = s_collateralTokens;
+    }
+
+    function getCollateralTokenPriceFeeds(address token) external view returns(address collateralTokensPriceFeeds){
+        collateralTokensPriceFeeds = s_priceFeeds[token];
+    }
+
+    function getCollateralBalanceOfUser(address user, address token) public view returns(uint256 tokenBalanceOfUser){
+        tokenBalanceOfUser = s_collateralDeposited[user][token];
+    }
+
+    function getDsc() public view returns(address){
+        return address(i_dsc);
     }
 }

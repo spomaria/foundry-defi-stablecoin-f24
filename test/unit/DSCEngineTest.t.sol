@@ -160,6 +160,7 @@ contract DSCEngineTest is Test {
     }
 
     function testMintDscRevertsIfMintingBreaksHealthFactor() public depositedCollateral {
+        // uint256 expectedHealthFactor = engine.getHealthFactor(USER);
         vm.expectRevert();
         vm.startPrank(USER);
         engine.mintDsc(UNHEALTHY_DSC);
